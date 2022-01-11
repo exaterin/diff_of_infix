@@ -4,14 +4,18 @@
 #include <stack>
 #include <string>
 #include <vector>
+#include <memory>
 using namespace std;
 
 vector <string> tokens;
 bool terminated = false;
  
+struct Node;
+using NodePointer = std::shared_ptr<Node>;
+
 struct Node{
     string data;
-    Node *left, *right;
+    NodePointer left, right;
     string evaluation;
 
     Node(string data){
@@ -19,7 +23,7 @@ struct Node{
         this->left = this->right = nullptr;
     };
 
-    Node(string data, Node *left, Node *right){
+    Node(string data, NodePointer left, NodePointer right){
         this->data = data;
         this->left = left;
         this->right = right;
@@ -152,10 +156,12 @@ string simplify(string left, string op, string right){
                     return left;
             } else
                 return "(" + left + " / " + right + ")";
+        default:
+            return {};
     };
 }
 
-string evaluate(Node* root){
+string evaluate(NodePointer root){
     if (root->left == nullptr && root->right == nullptr) 
         return root -> data;
     else 
@@ -163,7 +169,7 @@ string evaluate(Node* root){
 }
 
 
-string differentiate(Node* root){
+string differentiate(NodePointer root){
     //if it is a leaf
     if(root -> left == nullptr && root -> right == nullptr)
         if (root->data == "x")
@@ -196,28 +202,29 @@ string differentiate(Node* root){
                 break;
         }
     }
+    return {};
 }
 
-Node* construct(vector <string> postfix){
+NodePointer construct(vector <string> postfix){
     if (postfix.size() == 0) 
         return nullptr;
 
-    stack<Node*> s;
+    stack<NodePointer> s;
     for (int i = 0; i < postfix.size(); ++i){
         if (is_operator(postfix[i][0])){
             if(s.size() < 2){
                 cout << "Input error" << endl;
                 terminated = true;
             } else {
-                Node* x = s.top();
+                NodePointer x = s.top();
                 s.pop();
-                Node* y = s.top();
+                NodePointer y = s.top();
                 s.pop();
-                Node* node = new Node(postfix[i], y, x);
+                NodePointer node = std::make_shared<Node>(postfix[i], y, x);
                 s.push(node);
             }   
         } else
-            s.push(new Node(postfix[i]));
+            s.push(std::make_shared<Node>(postfix[i]));
     }
     return s.top();
 }
@@ -248,7 +255,7 @@ int main(){
             if(correctness(s)){
                 terminated = false;
                 vector <string> postfix = infix_to_postfix(s);;
-                Node* root = construct(postfix);
+                NodePointer root = construct(postfix);
                 
                 if(!terminated){
                     string diff = differentiate(root);
